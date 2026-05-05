@@ -1,57 +1,90 @@
-import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { FLOOR_ACTIVITY } from '../../data/mockData';
+import React, { useMemo } from 'react';
+import { FLOOR_ACTIVITY_OVERVIEW, LEVEL_COLORS } from '../../data/mockData';
+
+function levelLabel(levelKey) {
+  return `Level ${levelKey.replace('L', '')}`;
+}
 
 export default function FloorActivity() {
-  const maxVal = Math.max(...FLOOR_ACTIVITY.map(f => f.value));
-  const top3 = FLOOR_ACTIVITY.slice(0, 3);
+  const { total, avgPerFloor, maxOcc, rows, avgLinePct } = useMemo(() => {
+    const list = FLOOR_ACTIVITY_OVERVIEW.map(row => ({
+      ...row,
+      color: LEVEL_COLORS[row.levelKey],
+      label: levelLabel(row.levelKey),
+    }));
+    const total = list.reduce((s, r) => s + r.occupancy, 0);
+    const maxOcc = Math.max(...list.map(r => r.occupancy), 1);
+    const avgPerFloor = Math.round(total / list.length);
+    const avgLinePct = (avgPerFloor / maxOcc) * 100;
+    const rows = list.map(r => ({
+      ...r,
+      barPct: (r.occupancy / maxOcc) * 100,
+      sharePct: total > 0 ? (100 * r.occupancy) / total : 0,
+    }));
+    return { total, avgPerFloor, maxOcc, rows, avgLinePct };
+  }, []);
 
   return (
     <div className="card floor-activity-card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-        <div className="card-title">Floor Activity</div>
-        <div style={{ display: 'flex', gap: 2 }}>
-          <button className="btn-sm" style={{ padding: '3px 6px' }}><ChevronLeft size={12} /></button>
-          <button className="btn-sm" style={{ padding: '3px 6px' }}><ChevronRight size={12} /></button>
+      <div className="floor-activity-head">
+        <div>
+          <div className="card-title">Floor Activity Overview</div>
+          <div className="card-subtitle floor-activity-sub">Comparative occupancy distribution</div>
+        </div>
+        <div className="floor-activity-kpis">
+          <div className="floor-activity-kpi">
+            <span className="floor-activity-kpi-label">TOTAL</span>
+            <span className="floor-activity-kpi-val">{total.toLocaleString()}</span>
+          </div>
+          <div className="floor-activity-kpi">
+            <span className="floor-activity-kpi-label">AVG/FLOOR</span>
+            <span className="floor-activity-kpi-val">{avgPerFloor.toLocaleString()}</span>
+          </div>
         </div>
       </div>
-      <div className="card-subtitle">Relative occupancy across floors</div>
-      <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 10 }}>Showing 1–3 of 6</div>
 
-      {/* Top 3 mini cards */}
-      <div className="floor-cards-row">
-        {top3.map(floor => (
-          <div key={floor.level} className="floor-mini-card">
-            <div className="floor-mini-label" style={{ color: floor.color }}>
-              {floor.level}
+      <div className="floor-activity-rows" role="list">
+        {rows.map(r => (
+          <div key={r.levelKey} className="floor-activity-row" role="listitem">
+            <div className="floor-activity-row-left">
+              <span className="floor-activity-dot" style={{ background: r.color }} aria-hidden />
+              <span className="floor-activity-level-name">{r.label}</span>
+              <span className="floor-activity-trend">↗ {r.changePct.toFixed(1)}%</span>
             </div>
-            <div className="floor-mini-val">{floor.value.toLocaleString()}</div>
-            <div className="change-badge up" style={{ fontSize: 11 }}>
-              ↗ {floor.change}%
+            <div className="floor-activity-bar-cell">
+              <div className="floor-activity-track" aria-hidden>
+                <div
+                  className="floor-activity-fill"
+                  style={{ width: `${r.barPct}%`, backgroundColor: r.color }}
+                />
+                <div
+                  className="floor-activity-avg-line"
+                  style={{ left: `${avgLinePct}%` }}
+                />
+              </div>
+            </div>
+            <div className="floor-activity-row-right">
+              <span className="floor-activity-count">{r.occupancy.toLocaleString()} people</span>
+              <span className="floor-activity-share"> ({r.sharePct.toFixed(1)}%)</span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* All floors bars */}
-      <div className="floor-bar-section">
-        <label>ALL FLOORS</label>
-        {FLOOR_ACTIVITY.map(floor => (
-          <div key={floor.level} className="floor-bar-row">
-            <span>{floor.level}</span>
-            <div className="floor-bar-track">
-              <div
-                className="floor-bar-fill"
-                style={{
-                  width: `${(floor.value / maxVal) * 100}%`,
-                  background: floor.color,
-                }}
-              />
-            </div>
-            <span>{floor.value.toLocaleString()} people</span>
-          </div>
-        ))}
-        <div className="floor-bar-note">Bar width = relative to busiest floor</div>
+      <div className="floor-activity-foot">
+        <div className="floor-activity-legend">
+          <span className="floor-activity-legend-item">
+            <span className="floor-activity-leg-avg-icon" aria-hidden />
+            Average line
+          </span>
+          <span className="floor-activity-legend-item">
+            <span className="floor-activity-leg-bar-icon" aria-hidden />
+            Bar relative to highest floor
+          </span>
+        </div>
+        <div className="floor-activity-highest">
+          Highest: <strong>{maxOcc.toLocaleString()} people</strong>
+        </div>
       </div>
     </div>
   );
