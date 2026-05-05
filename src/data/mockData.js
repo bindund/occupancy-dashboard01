@@ -198,15 +198,6 @@ export const OCCUPANCY_TREND_DATA = (() => {
   });
 })();
 
-export const FLOOR_ACTIVITY = [
-  { level: 'Level 1', value: 678, change: 10.8, color: '#4F46E5' },
-  { level: 'Level 2', value: 333, change: 18.9, color: '#06B6D4' },
-  { level: 'Level 3', value: 20, change: 11.1, color: '#10B981' },
-  { level: 'Level 4', value: 245, change: -2.3, color: '#EF4444' },
-  { level: 'Level 5', value: 156, change: 5.4, color: '#8B5CF6' },
-  { level: 'Level 6', value: 89, change: 3.1, color: '#F97316' },
-];
-
 export const ENTRIES_EXITS_BY_FLOOR = [
   { floor: 'Level 1', entries: 3400, exits: 2900 },
   { floor: 'Level 2', entries: 1100, exits: 980 },
@@ -233,7 +224,7 @@ export const HOURWISE_UTILIZATION = [
 
 export const HEATMAP_DATA = (() => {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const hours = ['6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm'];
+  const hours = ['6am', '7am', '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'];
   return hours.map(hour => {
     const row = { hour };
     days.forEach(day => {
@@ -258,6 +249,16 @@ export const RECENT_REPORTS = [
   { name: 'February 2026 – Monthly Report', date: '02 Mar 2026', size: '2.4 MB', type: 'monthly' },
   { name: 'Q1 2026 – Quarterly Report', date: '05 Apr 2026', size: '5.8 MB', type: 'quarterly' },
   { name: 'January 2026 – Monthly Report', date: '01 Feb 2026', size: '2.1 MB', type: 'monthly' },
+];
+
+/** All-floors comparative row (bars scale to highest level). */
+export const FLOOR_ACTIVITY_OVERVIEW = [
+  { levelKey: 'L1', occupancy: 678, changePct: 10.8 },
+  { levelKey: 'L2', occupancy: 333, changePct: 18.9 },
+  { levelKey: 'L3', occupancy: 20, changePct: 11.1 },
+  { levelKey: 'L4', occupancy: 245, changePct: 16.7 },
+  { levelKey: 'L5', occupancy: 112, changePct: 14.3 },
+  { levelKey: 'L6', occupancy: 58, changePct: 11.5 },
 ];
 
 export const LEVEL_COLORS = {

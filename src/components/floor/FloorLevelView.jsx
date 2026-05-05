@@ -448,9 +448,8 @@ export default function FloorLevelView({ floor }) {
               <div className="floor-snapshot-mini-val">{detail.entries.toLocaleString()}</div>
               {entCmp?.change ? (
                 <div
-                  className={`floor-snapshot-mini-delta${
-                    entCmp.change.trim().startsWith('-') ? ' floor-snapshot-mini-delta--down' : ' floor-snapshot-mini-delta--up'
-                  }`}
+                  className={`floor-snapshot-mini-delta${entCmp.change.trim().startsWith('-') ? ' floor-snapshot-mini-delta--down' : ' floor-snapshot-mini-delta--up'
+                    }`}
                 >
                   {entCmp.change.startsWith('+')
                     ? `↗ ${entCmp.change.slice(1)}`
@@ -468,9 +467,8 @@ export default function FloorLevelView({ floor }) {
               <div className="floor-snapshot-mini-val">{detail.exits.toLocaleString()}</div>
               {extCmp?.change ? (
                 <div
-                  className={`floor-snapshot-mini-delta${
-                    extCmp.change.trim().startsWith('-') ? ' floor-snapshot-mini-delta--down' : ' floor-snapshot-mini-delta--up'
-                  }`}
+                  className={`floor-snapshot-mini-delta${extCmp.change.trim().startsWith('-') ? ' floor-snapshot-mini-delta--down' : ' floor-snapshot-mini-delta--up'
+                    }`}
                 >
                   {extCmp.change.startsWith('+')
                     ? `↗ ${extCmp.change.slice(1)}`
@@ -541,3 +539,4 @@ export default function FloorLevelView({ floor }) {
     </div>
   );
 }
+

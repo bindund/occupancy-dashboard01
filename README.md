@@ -36,7 +36,7 @@ src/
     layout/      Sidebar, Topbar
     charts/      ForecastCard, NetFlowChart, OccupancyTrendChart,
                  EntriesExitsChart, HourwiseUtilization, OccupancyHeatmap
-    ui/          KpiCards, FloorActivity
+    ui/          KpiCards
   pages/         DashboardPage, ReportsPage
   App.jsx
   index.css
