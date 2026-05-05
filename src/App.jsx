@@ -28,7 +28,7 @@ export default function App() {
           <div style={{
             display: 'flex',
             gap: 2,
-            padding: '10px 20px 0',
+            padding: '20px 20px 20px 20px',
             background: 'var(--surface)',
             borderBottom: '1px solid var(--border)',
           }}>

@@ -38,17 +38,35 @@ const trend14 = (seed, scale = 1) =>
     return { day, dayLabel: String(day), entries, exits };
   });
 
-const peakRows = (base, spread) => {
-  const days = ['Tue', 'Wed', 'Thu', 'Fri', 'Mon', 'Thu', 'Wed', 'Tue', 'Fri', 'Sat'];
-  const times = ['10:15', '09:40', '14:22', '11:05', '08:55', '15:10', '10:00', '12:30', '09:15', '13:45'];
-  return Array.from({ length: 10 }, (_, i) => ({
-    rank: i + 1,
-    date: `${18 - i} Feb 2026`,
-    day: days[i % days.length],
-    peakTime: times[i],
-    month: 'Feb',
-    occupancy: Math.round(base - i * spread - (i % 3) * 4),
-  }));
+const PEAK_TIME_LABELS = [
+  '10:30 AM', '9:40 AM', '2:22 PM', '11:05 AM', '8:55 AM',
+  '3:10 PM', '10:00 AM', '12:30 PM', '9:15 AM', '1:45 PM',
+  '4:20 PM', '7:15 AM', '6:45 PM', '11:50 AM', '2:05 PM',
+];
+
+const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_FULL = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/** @param {number} count total rows (paginate in UI; default 24) */
+const peakRows = (base, spread, count = 24) => {
+  const anchor = new Date(2026, 0, 22);
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(anchor);
+    d.setDate(d.getDate() - i * 2 - Math.floor(i / 5));
+    const dateStr = `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+    return {
+      rank: i + 1,
+      date: dateStr,
+      day: FULL_DAYS[d.getDay()],
+      peakTime: PEAK_TIME_LABELS[i % PEAK_TIME_LABELS.length],
+      month: MONTH_FULL[d.getMonth()],
+      occupancy: Math.max(40, Math.round(base - i * spread - (i % 3) * 4)),
+    };
+  });
 };
 
 /** Single-floor dashboard content (indigo / cyan / green accents). */
@@ -74,7 +92,7 @@ export const FLOOR_LEVEL_VIEW = {
       ],
     },
     trend14: trend14(1.1, 1),
-    peakRecords: peakRows(892, 9),
+    peakRecords: peakRows(892, 9, 24),
   },
   'Level 2': {
     accent: '#06B6D4',
@@ -97,7 +115,7 @@ export const FLOOR_LEVEL_VIEW = {
       ],
     },
     trend14: trend14(2.4, 0.55),
-    peakRecords: peakRows(548, 6),
+    peakRecords: peakRows(548, 6, 24),
   },
   'Level 3': {
     accent: '#10B981',
@@ -120,7 +138,7 @@ export const FLOOR_LEVEL_VIEW = {
       ],
     },
     trend14: trend14(3.8, 0.22),
-    peakRecords: peakRows(168, 5),
+    peakRecords: peakRows(168, 5, 24),
   },
 };
 
