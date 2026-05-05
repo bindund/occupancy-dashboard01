@@ -418,28 +418,28 @@ export default function FloorLevelView({ floor }) {
             </span>
           </div>
 
-          <div className="floor-snapshot-occ">
-            <div className="floor-snapshot-occ-label">Current occupancy</div>
-            <div className="floor-snapshot-occ-row">
-              <span className="floor-snapshot-occ-num">{detail.occupancy.toLocaleString()}</span>
-              <div className="floor-snapshot-occ-meta">
-                {occCmp?.change ? (
-                  <span className={changeChipTone(occCmp.change)}>
-                    {occCmp.change.startsWith('+')
-                      ? `↗ ${occCmp.change.slice(1)}`
-                      : occCmp.change.startsWith('-')
-                        ? `↘ ${occCmp.change.slice(1)}`
-                        : occCmp.change}
+          <div className="floor-snapshot-grid">
+            <div className="floor-snapshot-occ">
+              <div className="floor-snapshot-occ-label">Current occupancy</div>
+              <div className="floor-snapshot-occ-row floor-snapshot-occ-row--stacked">
+                <span className="floor-snapshot-occ-num">{detail.occupancy.toLocaleString()}</span>
+                <div className="floor-snapshot-occ-meta">
+                  {occCmp?.change ? (
+                    <span className={changeChipTone(occCmp.change)}>
+                      {occCmp.change.startsWith('+')
+                        ? `↗ ${occCmp.change.slice(1)}`
+                        : occCmp.change.startsWith('-')
+                          ? `↘ ${occCmp.change.slice(1)}`
+                          : occCmp.change}
+                    </span>
+                  ) : null}
+                  <span className="floor-snapshot-net">
+                    {netArrow} Net {overview.netFlow} flow
                   </span>
-                ) : null}
-                <span className="floor-snapshot-net">
-                  {netArrow} Net {overview.netFlow} flow
-                </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="floor-snapshot-split">
             <div className="floor-snapshot-mini floor-snapshot-mini--entries">
               <div className="floor-snapshot-mini-head">
                 <LogIn size={14} strokeWidth={2.25} className="floor-snapshot-mini-ico" aria-hidden />
@@ -447,11 +447,7 @@ export default function FloorLevelView({ floor }) {
               </div>
               <div className="floor-snapshot-mini-val">{detail.entries.toLocaleString()}</div>
               {entCmp?.change ? (
-                <div
-                  className={`floor-snapshot-mini-delta${
-                    entCmp.change.trim().startsWith('-') ? ' floor-snapshot-mini-delta--down' : ' floor-snapshot-mini-delta--up'
-                  }`}
-                >
+                <div className={`floor-snapshot-mini-delta ${changeChipTone(entCmp.change)}`}>
                   {entCmp.change.startsWith('+')
                     ? `↗ ${entCmp.change.slice(1)}`
                     : entCmp.change.startsWith('-')
@@ -467,11 +463,7 @@ export default function FloorLevelView({ floor }) {
               </div>
               <div className="floor-snapshot-mini-val">{detail.exits.toLocaleString()}</div>
               {extCmp?.change ? (
-                <div
-                  className={`floor-snapshot-mini-delta${
-                    extCmp.change.trim().startsWith('-') ? ' floor-snapshot-mini-delta--down' : ' floor-snapshot-mini-delta--up'
-                  }`}
-                >
+                <div className={`floor-snapshot-mini-delta ${changeChipTone(extCmp.change)}`}>
                   {extCmp.change.startsWith('+')
                     ? `↗ ${extCmp.change.slice(1)}`
                     : extCmp.change.startsWith('-')
