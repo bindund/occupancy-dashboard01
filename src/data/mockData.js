@@ -1,3 +1,5 @@
+import { mulberry32 } from '../utils/seededRandom';
+
 // Mock data for the Occupancy Dashboard
 
 export const KPI_DATA = {
@@ -7,28 +9,95 @@ export const KPI_DATA = {
   peakToday: { value: 1268, time: '10:30 AM' },
 };
 
-/** KPI row keyed by floor tab — aggregate vs per-level (Figma). */
+/** KPI row keyed by floor tab — aggregate vs per-floor (Figma). */
 export const KPI_DATA_BY_FLOOR = {
   'All Floors': KPI_DATA,
-  'Level 1': {
+  'Floor 1': {
     currentOccupancy: { value: 678, change: 10.8, status: 'Live' },
     totalEntries: { value: 3218, change: 11.0 },
     totalExits: { value: 2540, change: 11.0 },
     peakToday: { value: 821, time: '10:30 AM' },
   },
-  'Level 2': {
+  'Floor 2': {
     currentOccupancy: { value: 333, change: 18.9, status: 'Live' },
     totalEntries: { value: 1180, change: 8.2 },
     totalExits: { value: 990, change: 7.5 },
     peakToday: { value: 512, time: '11:05 AM' },
   },
-  'Level 3': {
+  'Floor 3': {
     currentOccupancy: { value: 20, change: 11.1, status: 'Live' },
     totalEntries: { value: 780, change: 5.4 },
     totalExits: { value: 690, change: 4.8 },
     peakToday: { value: 156, time: '9:45 AM' },
   },
 };
+
+/** Mock scaling for Today vs Week vs Month (aggregates / rolling views). */
+export function kpiMultipliersForScope(scope) {
+  switch (scope) {
+    case 'Today':
+      return { occupancy: 1, entriesExits: 1, peak: 1, changeDampen: 1, spark: 1, trend: 1 };
+    case 'Week':
+      return { occupancy: 0.93, entriesExits: 5.7, peak: 1.05, changeDampen: 0.88, spark: 1.28, trend: 1.18 };
+    case 'Month':
+      return { occupancy: 0.89, entriesExits: 22, peak: 1.1, changeDampen: 0.74, spark: 1.55, trend: 1.35 };
+    default:
+      return { occupancy: 1, entriesExits: 1, peak: 1, changeDampen: 1, spark: 1, trend: 1 };
+  }
+}
+
+export function getKpiForFloorAndScope(floorKey, scope) {
+  const base = KPI_DATA_BY_FLOOR[floorKey] ?? KPI_DATA_BY_FLOOR['All Floors'];
+  const m = kpiMultipliersForScope(scope);
+  const r = n => Math.round(n);
+  const rd1 = n => Math.round(n * 10) / 10;
+  const ch = c => rd1(Math.max(-99, Math.min(99, c * m.changeDampen)));
+  return {
+    currentOccupancy: { ...base.currentOccupancy, value: r(base.currentOccupancy.value * m.occupancy) },
+    totalEntries: {
+      ...base.totalEntries,
+      value: r(base.totalEntries.value * m.entriesExits),
+      change: ch(base.totalEntries.change),
+    },
+    totalExits: {
+      ...base.totalExits,
+      value: r(base.totalExits.value * m.entriesExits),
+      change: ch(base.totalExits.change),
+    },
+    peakToday: { ...base.peakToday, value: r(base.peakToday.value * m.peak) },
+  };
+}
+
+export function adaptFloorCfgForScope(cfg, scope) {
+  if (!cfg || scope === 'Today') return cfg;
+  const m = kpiMultipliersForScope(scope);
+  return {
+    ...cfg,
+    detail: {
+      occupancy: Math.round(cfg.detail.occupancy * m.occupancy),
+      entries: Math.round(cfg.detail.entries * m.entriesExits),
+      exits: Math.round(cfg.detail.exits * m.entriesExits),
+    },
+    overview: {
+      ...cfg.overview,
+      todayPeak: Math.round(cfg.overview.todayPeak * m.peak),
+    },
+    sparkline: cfg.sparkline.map(pt => ({
+      ...pt,
+      entries: Math.round(pt.entries * m.spark),
+      exits: Math.round(pt.exits * m.spark),
+    })),
+    trend14: cfg.trend14.map(pt => ({
+      ...pt,
+      entries: Math.round(pt.entries * m.trend),
+      exits: Math.round(pt.exits * m.trend),
+    })),
+    peakRecords: cfg.peakRecords.map((row, i) => ({
+      ...row,
+      occupancy: Math.max(40, Math.round(row.occupancy * (0.94 + (i % 5) * 0.008))),
+    })),
+  };
+}
 
 const trend14 = (seed, scale = 1) =>
   Array.from({ length: 14 }, (_, day) => {
@@ -71,7 +140,7 @@ const peakRows = (base, spread, count = 24) => {
 
 /** Single-floor dashboard content (indigo / cyan / green accents). */
 export const FLOOR_LEVEL_VIEW = {
-  'Level 1': {
+  'Floor 1': {
     accent: '#4F46E5',
     detail: { occupancy: 678, entries: 3218, exits: 2540 },
     sparkline: Array.from({ length: 16 }, (_, i) => ({
@@ -94,7 +163,7 @@ export const FLOOR_LEVEL_VIEW = {
     trend14: trend14(1.1, 1),
     peakRecords: peakRows(892, 9, 24),
   },
-  'Level 2': {
+  'Floor 2': {
     accent: '#06B6D4',
     detail: { occupancy: 333, entries: 1180, exits: 990 },
     sparkline: Array.from({ length: 16 }, (_, i) => ({
@@ -117,7 +186,7 @@ export const FLOOR_LEVEL_VIEW = {
     trend14: trend14(2.4, 0.55),
     peakRecords: peakRows(548, 6, 24),
   },
-  'Level 3': {
+  'Floor 3': {
     accent: '#10B981',
     detail: { occupancy: 20, entries: 780, exits: 690 },
     sparkline: Array.from({ length: 16 }, (_, i) => ({
@@ -199,12 +268,12 @@ export const OCCUPANCY_TREND_DATA = (() => {
 })();
 
 export const ENTRIES_EXITS_BY_FLOOR = [
-  { floor: 'Level 1', entries: 3400, exits: 2900 },
-  { floor: 'Level 2', entries: 1100, exits: 980 },
-  { floor: 'Level 3', entries: 780, exits: 690 },
-  { floor: 'Level 4', entries: 920, exits: 850 },
-  { floor: 'Level 5', entries: 560, exits: 490 },
-  { floor: 'Level 6', entries: 340, exits: 310 },
+  { floor: 'Floor 1', entries: 3400, exits: 2900 },
+  { floor: 'Floor 2', entries: 1100, exits: 980 },
+  { floor: 'Floor 3', entries: 780, exits: 690 },
+  { floor: 'Floor 4', entries: 920, exits: 850 },
+  { floor: 'Floor 5', entries: 560, exits: 490 },
+  { floor: 'Floor 6', entries: 340, exits: 310 },
 ];
 
 export const HOURWISE_UTILIZATION = [
@@ -222,28 +291,31 @@ export const HOURWISE_UTILIZATION = [
   { hour: '22:00', L1: 3, L2: 2, L3: 0, L4: 1 },
 ];
 
-export const HEATMAP_DATA = (() => {
+export function buildHeatmapData(seed) {
+  const rnd = mulberry32(seed >>> 0);
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const hours = ['6am', '7am', '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'];
-  return hours.map(hour => {
-    const row = { hour };
+  return hours.map(hourLabel => {
+    const row = { hour: hourLabel };
     days.forEach(day => {
       const isWeekend = day === 'Sat' || day === 'Sun';
-      const h = parseInt(hour);
+      const h = parseInt(hourLabel, 10);
       let val = 0;
       if (!isWeekend) {
-        if (h >= 9 && h <= 11) val = Math.random() * 0.4 + 0.6;
-        else if (h >= 12 && h <= 14) val = Math.random() * 0.3 + 0.5;
-        else if (h >= 8 && h <= 15) val = Math.random() * 0.3 + 0.2;
-        else val = Math.random() * 0.1;
+        if (h >= 9 && h <= 11) val = rnd() * 0.4 + 0.6;
+        else if (h >= 12 && h <= 14) val = rnd() * 0.3 + 0.5;
+        else if (h >= 8 && h <= 15) val = rnd() * 0.3 + 0.2;
+        else val = rnd() * 0.1;
       } else {
-        val = Math.random() * 0.15;
+        val = rnd() * 0.15;
       }
       row[day] = parseFloat(val.toFixed(2));
     });
     return row;
   });
-})();
+}
+
+export const HEATMAP_DATA = buildHeatmapData(424242);
 
 export const RECENT_REPORTS = [
   { name: 'February 2026 – Monthly Report', date: '02 Mar 2026', size: '2.4 MB', type: 'monthly' },
@@ -251,7 +323,7 @@ export const RECENT_REPORTS = [
   { name: 'January 2026 – Monthly Report', date: '01 Feb 2026', size: '2.1 MB', type: 'monthly' },
 ];
 
-/** All-floors comparative row (bars scale to highest level). */
+/** All-floors comparative row (bars scale to highest floor). */
 export const FLOOR_ACTIVITY_OVERVIEW = [
   { levelKey: 'L1', occupancy: 678, changePct: 10.8 },
   { levelKey: 'L2', occupancy: 333, changePct: 18.9 },
@@ -262,12 +334,12 @@ export const FLOOR_ACTIVITY_OVERVIEW = [
 ];
 
 export const LEVEL_COLORS = {
-  'Level 1': '#4F46E5',
-  'Level 2': '#06B6D4',
-  'Level 3': '#10B981',
-  'Level 4': '#EF4444',
-  'Level 5': '#8B5CF6',
-  'Level 6': '#F97316',
+  'Floor 1': '#4F46E5',
+  'Floor 2': '#06B6D4',
+  'Floor 3': '#10B981',
+  'Floor 4': '#EF4444',
+  'Floor 5': '#8B5CF6',
+  'Floor 6': '#F97316',
   L1: '#4F46E5',
   L2: '#06B6D4',
   L3: '#10B981',

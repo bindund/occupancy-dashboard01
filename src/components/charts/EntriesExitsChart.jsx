@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
-import { ENTRIES_EXITS_BY_FLOOR } from '../../data/mockData';
+import { ENTRIES_EXITS_BY_FLOOR, kpiMultipliersForScope } from '../../data/mockData';
 import { EXITS_SERIES_COLOR } from '../../utils/chartTheme';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -23,8 +23,17 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
 };
 
-export default function EntriesExitsChart() {
+export default function EntriesExitsChart({ activeTime = 'Today' }) {
     const [mode, setMode] = useState('grouped');
+
+    const chartData = useMemo(() => {
+        const m = kpiMultipliersForScope(activeTime).entriesExits;
+        return ENTRIES_EXITS_BY_FLOOR.map(r => ({
+            floor: r.floor,
+            entries: Math.round(r.entries * m),
+            exits: Math.round(r.exits * m),
+        }));
+    }, [activeTime]);
 
     return (
         <div className="card full-row">
@@ -34,10 +43,10 @@ export default function EntriesExitsChart() {
                     <div className="card-subtitle">Traffic comparison across floors for selected period</div>
                 </div>
                 <div className="chart-toggle">
-                    <button className={`toggle-btn ${mode === 'stacked' ? 'active' : ''}`} onClick={() => setMode('stacked')}>
+                    <button type="button" className={`toggle-btn ${mode === 'stacked' ? 'active' : ''}`} onClick={() => setMode('stacked')}>
                         Stacked
                     </button>
-                    <button className={`toggle-btn ${mode === 'grouped' ? 'active' : ''}`} onClick={() => setMode('grouped')}>
+                    <button type="button" className={`toggle-btn ${mode === 'grouped' ? 'active' : ''}`} onClick={() => setMode('grouped')}>
                         Grouped
                     </button>
                 </div>
@@ -45,7 +54,7 @@ export default function EntriesExitsChart() {
 
             <ResponsiveContainer width="100%" height={200}>
                 <BarChart
-                    data={ENTRIES_EXITS_BY_FLOOR}
+                    data={chartData}
                     barCategoryGap="30%"
                     barGap={4}
                     margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
@@ -62,7 +71,7 @@ export default function EntriesExitsChart() {
                         axisLine={false}
                         tickLine={false}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip />} cursor={false} />
                     <Bar
                         dataKey="entries"
                         name="Entries"

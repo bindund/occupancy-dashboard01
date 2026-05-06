@@ -1,7 +1,8 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
 import { FORECAST_DATA } from '../../data/mockData';
 import { ThemeContext } from '../../App';
+import { formatTrendDayLabelIST, formatDateFilterRangeLabel } from '../../utils/istDates';
 
 function Gauge({ value, max = 1500, isDark }) {
   const pct = Math.min(value / max, 1);
@@ -41,26 +42,55 @@ function barFill(entry, peakHour, highlightSet, barBg) {
   return barBg;
 }
 
-export default function ForecastCard() {
+export default function ForecastCard({ activeTime = 'Today' }) {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
-  const d = FORECAST_DATA;
+
+  const d = useMemo(() => {
+    const m = activeTime === 'Today' ? 1 : activeTime === 'Week' ? 1.05 : 1.1;
+    const hM = activeTime === 'Today' ? 1 : activeTime === 'Week' ? 1.04 : 1.08;
+    return {
+      ...FORECAST_DATA,
+      peakForecast: Math.round(FORECAST_DATA.peakForecast * m),
+      dailyAverage: Math.round(FORECAST_DATA.dailyAverage * m),
+      quietPeak: Math.round(FORECAST_DATA.quietPeak * hM),
+      secondaryPeakPpl: Math.round(FORECAST_DATA.secondaryPeakPpl * m),
+      vsLastThursday: Math.round(FORECAST_DATA.vsLastThursday * (activeTime === 'Month' ? 0.92 : 1) * 10) / 10,
+      hourly: FORECAST_DATA.hourly.map(pt => ({
+        ...pt,
+        val: Math.round(pt.val * hM),
+      })),
+    };
+  }, [activeTime]);
+
+  const title =
+    activeTime === 'Today'
+      ? 'FORECAST FOR TODAY'
+      : activeTime === 'Week'
+        ? 'FORECAST FOR THIS WEEK'
+        : 'FORECAST FOR THIS MONTH';
+  const subLine =
+    activeTime === 'Today'
+      ? `${formatTrendDayLabelIST()} · 30-day LSTM model`
+      : `${formatDateFilterRangeLabel(activeTime)} · 30-day LSTM model`;
+
   const peak = d.hourly.reduce((a, b) => (b.val > a.val ? b : a), d.hourly[0]);
   const barBg = isDark ? '#2a2f42' : '#e8eaf4';
   const highlightSet = new Set(d.highlightHours ?? [peak.hour]);
 
   return (
     <div className="card">
-      <div className="card-title">FORECAST FOR TODAY</div>
-      <div className="card-subtitle forecast-card-sub">
-        Thu 26 Feb – 30-day LSTM Model
-      </div>
+      <div className="card-title">{title}</div>
+      <div className="card-subtitle forecast-card-sub">{subLine}</div>
       <div className="forecast-inner">
         <div className="forecast-top">
           <div className="forecast-gauge-col">
             <Gauge value={d.peakForecast} isDark={isDark} />
             <div className="forecast-gauge-copy">
-              <div className="forecast-gauge-label">PEAK FORECAST – TODAY</div>
+              <div className="forecast-gauge-label">
+                PEAK FORECAST
+                {activeTime === 'Today' ? ' – TODAY' : activeTime === 'Week' ? ' – WEEK' : ' – MONTH'}
+              </div>
               <div className="forecast-value">{d.peakForecast.toLocaleString()}</div>
               <div className="forecast-meta">{d.window} · {d.confidence}% confidence</div>
             </div>

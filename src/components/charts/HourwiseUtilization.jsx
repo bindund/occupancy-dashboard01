@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer
 } from 'recharts';
 import { HOURWISE_UTILIZATION, LEVEL_COLORS } from '../../data/mockData';
+import { formatDateFilterRangeLabel } from '../../utils/istDates';
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -22,8 +23,26 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
 };
 
-export default function HourwiseUtilization() {
+export default function HourwiseUtilization({ activeTime = 'Today' }) {
     const [mode, setMode] = useState('stacked');
+
+    const scaled = useMemo(() => {
+        const factor = activeTime === 'Today' ? 1 : activeTime === 'Week' ? 3.2 : 6.9;
+        return HOURWISE_UTILIZATION.map(row => {
+            const next = { hour: row.hour };
+            ['L1', 'L2', 'L3', 'L4'].forEach(k => {
+                next[k] = Math.max(0, Math.round(row[k] * factor));
+            });
+            return next;
+        });
+    }, [activeTime]);
+
+    const scopeNote =
+        activeTime === 'Today'
+            ? 'Data shown for today (IST)'
+            : activeTime === 'Week'
+              ? 'Aggregated for the selected week (IST)'
+              : 'Aggregated for the selected month (IST)';
 
     return (
         <div className="card full-row">
@@ -33,12 +52,12 @@ export default function HourwiseUtilization() {
                     <div className="card-subtitle">Hourly occupancy distribution across floors</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text3)' }}>26 Feb 2026 - 26 Feb 2026</span>
+                    <span style={{ fontSize: 11, color: 'var(--text3)' }}>{formatDateFilterRangeLabel(activeTime)}</span>
                     <div className="chart-toggle">
-                        <button className={`toggle-btn ${mode === 'stacked' ? 'active' : ''}`} onClick={() => setMode('stacked')}>
+                        <button type="button" className={`toggle-btn ${mode === 'stacked' ? 'active' : ''}`} onClick={() => setMode('stacked')}>
                             Stacked View
                         </button>
-                        <button className={`toggle-btn ${mode === 'grouped' ? 'active' : ''}`} onClick={() => setMode('grouped')}>
+                        <button type="button" className={`toggle-btn ${mode === 'grouped' ? 'active' : ''}`} onClick={() => setMode('grouped')}>
                             Grouped
                         </button>
                     </div>
@@ -47,19 +66,19 @@ export default function HourwiseUtilization() {
 
             <ResponsiveContainer width="100%" height={200}>
                 <BarChart
-                    data={HOURWISE_UTILIZATION}
+                    data={scaled}
                     barCategoryGap="20%"
                     margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="hour" tick={{ fontSize: 10, fill: '#545d82' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: '#545d82' }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip />} cursor={false} />
                     {['L1', 'L2', 'L3', 'L4'].map(l => (
                         <Bar
                             key={l}
                             dataKey={l}
-                            name={l.replace('L', 'Level ')}
+                            name={`Floor ${l.slice(1)}`}
                             fill={LEVEL_COLORS[l]}
                             stackId={mode === 'stacked' ? 'a' : undefined}
                             radius={mode === 'stacked' ? [0, 0, 0, 0] : [2, 2, 0, 0]}
@@ -73,19 +92,19 @@ export default function HourwiseUtilization() {
                     {['L1', 'L2', 'L3', 'L4'].map(l => (
                         <div key={l} className="legend-item">
                             <div className="legend-dot" style={{ background: LEVEL_COLORS[l] }} />
-                            {l.replace('L', 'Level ')}
+                            {`Floor ${l.slice(1)}`}
                         </div>
                     ))}
                 </div>
                 <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text3)' }}>
-                    <span>● Level 1: 678%</span>
-                    <span>● Level 2: 333%</span>
-                    <span>● Level 3: 20%</span>
-                    <span>● Level 4: 245%</span>
+                    <span>● Floor 1: 678%</span>
+                    <span>● Floor 2: 333%</span>
+                    <span>● Floor 3: 20%</span>
+                    <span>● Floor 4: 245%</span>
                 </div>
             </div>
             <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 6 }}>
-                Data shown for selected week period
+                {scopeNote}
             </div>
         </div>
     );

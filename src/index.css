@@ -232,6 +232,29 @@ body {
     margin-bottom: 16px;
 }
 
+/* Dashboard: floor vs time-scope clusters don’t shrink or overlap */
+.tab-bar-dashboard {
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tab-bar-floors {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.tab-bar-scope {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
 .tabs-left {
     display: flex;
     gap: 2px;
@@ -285,6 +308,21 @@ body {
     font-size: 12px;
     color: var(--text2);
     cursor: pointer;
+}
+
+button.date-badge {
+    font: inherit;
+}
+
+.date-badge-cluster {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.date-badge--readonly {
+    cursor: default;
 }
 
 /* Grid */
@@ -807,7 +845,7 @@ body {
     height: 76px;
 }
 
-/* Single-floor view (Level 1–3) */
+/* Single-floor view (Floor 1–3) */
 .floor-level-view {
     display: flex;
     flex-direction: column;
@@ -917,8 +955,8 @@ body {
     align-items: stretch;
 }
 
-.floor-snapshot-grid > .floor-snapshot-occ,
-.floor-snapshot-grid > .floor-snapshot-mini {
+.floor-snapshot-grid>.floor-snapshot-occ,
+.floor-snapshot-grid>.floor-snapshot-mini {
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -1549,6 +1587,137 @@ body {
     width: 16px;
     height: 10px;
     border-radius: 2px;
+}
+
+/* Occupancy calendar heatmap: rows = IST weeks (Sun-first), SUN…SAT footer, DD Mon row labels */
+.occupancy-heatmap-scroll {
+    max-height: min(520px, 65vh);
+    overflow: auto;
+    border-radius: 8px;
+}
+
+.occupancy-cal-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+}
+
+.occupancy-cal-scroll {
+    flex: 1;
+    min-width: 0;
+}
+
+.occupancy-cal-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 2px 3px;
+}
+
+.occupancy-cal-row-label {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    text-align: right;
+    vertical-align: middle;
+    padding: 4px 2px 4px 0;
+    white-space: nowrap;
+    background: var(--surface);
+    min-width: 48px;
+    width: 1%;
+}
+
+.occupancy-cal-td {
+    padding: 0;
+    vertical-align: middle;
+}
+
+.occupancy-cal-table tbody td:first-of-type {
+    padding-left: 0;
+}
+
+.occupancy-cal-cell {
+    position: relative;
+    min-width: 44px;
+    min-height: 50px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+}
+
+.occupancy-cal-cell--empty {
+    cursor: default;
+}
+
+.occupancy-cal-day {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    color: var(--text3);
+    line-height: 1;
+}
+
+.occupancy-cal-value {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    opacity: 0.55;
+}
+
+.light .occupancy-cal-value {
+    opacity: 0.6;
+}
+
+.occupancy-cal-corner {
+    min-width: 48px;
+    width: 1%;
+    background: var(--surface);
+}
+
+.occupancy-cal-axis {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text3);
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 2px;
+    background: var(--surface);
+}
+
+.occupancy-cal-scale {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+}
+
+.occupancy-cal-scale-max {
+    line-height: 1;
+}
+
+.occupancy-cal-scale-bar {
+    width: 14px;
+    flex: 1;
+    min-height: 140px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.occupancy-cal-scale-min {
+    line-height: 1;
 }
 
 /* Reports page */

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Users, LogIn, LogOut, TrendingUp } from 'lucide-react';
-import { KPI_DATA_BY_FLOOR, LEVEL_COLORS } from '../../data/mockData';
+import { getKpiForFloorAndScope, LEVEL_COLORS } from '../../data/mockData';
 import { hexAlpha } from '../../utils/color';
 
 const DEFAULT_ICONS = [
@@ -12,14 +12,20 @@ const DEFAULT_ICONS = [
 
 const ICON_COMPONENTS = [Users, LogIn, LogOut, TrendingUp];
 
+function peakPeriodLabel(activeTime) {
+  if (activeTime === 'Today') return 'PEAK TODAY';
+  if (activeTime === 'Week') return 'PEAK (WEEK)';
+  return 'PEAK (MONTH)';
+}
+
 const CARDS = [
   { label: 'CURRENT OCCUPANCY', key: 'currentOccupancy', showLive: true },
   { label: 'TOTAL ENTRIES', key: 'totalEntries' },
   { label: 'TOTAL EXITS', key: 'totalExits' },
-  { label: 'PEAK TODAY', key: 'peakToday', showTime: true },
+  { key: 'peakToday', showTime: true, peak: true },
 ];
 
-export default function KpiCards({ activeFloor = 'All Floors' }) {
+export default function KpiCards({ activeFloor = 'All Floors', activeTime = 'Today' }) {
   const icons = useMemo(() => {
     const accent = LEVEL_COLORS[activeFloor];
     if (!accent) return DEFAULT_ICONS;
@@ -30,18 +36,19 @@ export default function KpiCards({ activeFloor = 'All Floors' }) {
     }));
   }, [activeFloor]);
 
-  const kpi = KPI_DATA_BY_FLOOR[activeFloor] ?? KPI_DATA_BY_FLOOR['All Floors'];
+  const kpi = getKpiForFloorAndScope(activeFloor, activeTime);
 
   return (
     <div className="kpi-grid">
       {CARDS.map((card, i) => {
         const data = kpi[card.key];
+        const cardLabel = card.peak ? peakPeriodLabel(activeTime) : card.label;
         const { icon: Icon, bg, color } = icons[i];
         const isUp = data.change >= 0;
         return (
           <div key={card.key} className="card kpi-card">
             <div className="kpi-label">
-              {card.label}
+              {cardLabel}
               <div className="kpi-icon" style={{ background: bg }}>
                 <Icon size={16} color={color} />
               </div>
