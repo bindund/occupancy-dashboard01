@@ -7,19 +7,6 @@ import {
 /** Bottom/top axis labels (calendar reference style). */
 export const HEATMAP_CAL_COL_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
-const HOURS = [
-  '6am', '7am', '8am', '9am', '10am', '11am', '12pm',
-  '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm',
-];
-
-function istIsWeekend(ymd) {
-  const wd = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Kolkata',
-    weekday: 'short',
-  }).format(istDateFromParts(ymd.y, ymd.m, ymd.d));
-  return wd === 'Sat' || wd === 'Sun';
-}
-
 function istWeekdayShortUpper(ymd) {
   const s = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Kolkata',
@@ -80,26 +67,28 @@ function tooltipHeader(ymd) {
   return `${day} ${mon} ${year} (${wd})`;
 }
 
-function computeDailyAvgForYmd(ymd, baseSeed, segmentIndex) {
-  const rnd = mulberry32((baseSeed + segmentIndex * 0x51ed) >>> 0);
-  const weekend = istIsWeekend(ymd);
-  let sum = 0;
-  let count = 0;
-  HOURS.forEach(hourLabel => {
-    const h = parseInt(hourLabel, 10);
-    let val = 0;
-    if (!weekend) {
-      if (h >= 9 && h <= 11) val = rnd() * 0.4 + 0.6;
-      else if (h >= 12 && h <= 14) val = rnd() * 0.3 + 0.5;
-      else if (h >= 8 && h <= 15) val = rnd() * 0.3 + 0.2;
-      else val = rnd() * 0.1;
-    } else {
-      val = rnd() * 0.15;
-    }
-    sum += val;
-    count += 1;
-  });
-  return count > 0 ? sum / count : 0;
+/** Demo: fixed IST April scores (any year). Other dates use seeded random 0…15. */
+const MOCK_APRIL_FIXED_SCORE = {
+  6: 1,
+  7: 5,
+  8: 12,
+  9: 0,
+  10: 13,
+};
+
+const MOCK_SCORE_MAX = 15;
+
+function mockScoreSeed(ymd) {
+  return (ymd.y * 372 + ymd.m * 31 + ymd.d * 17 + 0x9e3779b9) >>> 0;
+}
+
+/** Integer occupancy index 0…15 for mock data. */
+function mockOccupancyScore(ymd) {
+  if (ymd.m === 4 && Object.prototype.hasOwnProperty.call(MOCK_APRIL_FIXED_SCORE, ymd.d)) {
+    return MOCK_APRIL_FIXED_SCORE[ymd.d];
+  }
+  const rnd = mulberry32(mockScoreSeed(ymd));
+  return Math.floor(rnd() * (MOCK_SCORE_MAX + 1));
 }
 
 /**
@@ -113,8 +102,6 @@ export function buildHeatmapCalendarGridModel(startYmd, endYmd) {
   const leading = istDayDistance(gridSunday, startYmd);
   const totalSpan = leading + dayCount;
   const numRows = Math.ceil(totalSpan / 7);
-
-  const baseSeed = ((startYmd.y * 366 + startYmd.m * 31 + startYmd.d) ^ 0x6d2b79f5) >>> 0;
 
   const rowLeftLabels = [];
   for (let r = 0; r < numRows; r++) {
@@ -138,20 +125,17 @@ export function buildHeatmapCalendarGridModel(startYmd, endYmd) {
         continue;
       }
 
-      const avg = computeDailyAvgForYmd(cellYmd, baseSeed, seg);
-      const score0to10 = Math.min(10, Math.max(0, Math.round(avg * 10)));
+      const score = mockOccupancyScore(cellYmd);
+      const rawAvg = Math.min(1, Math.max(0, score / MOCK_SCORE_MAX));
       const h1 = tooltipHeader(cellYmd);
-      const h2 =
-        score0to10 === 0
-          ? 'No peak occupancy (mock)'
-          : `Relative occupancy index: ${score0to10} (mock)`;
+      const h2 = `Index: ${score} (mock)`;
 
       row.push({
         key: `${cellYmd.y}-${String(cellYmd.m).padStart(2, '0')}-${String(cellYmd.d).padStart(2, '0')}`,
         empty: false,
         dayPadded: paddedDay(cellYmd.d),
-        rawAvg: parseFloat(avg.toFixed(4)),
-        score0to10,
+        rawAvg: parseFloat(rawAvg.toFixed(4)),
+        occupancyScore: score,
         tooltipLine1: h1,
         tooltipLine2: h2,
       });

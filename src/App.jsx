@@ -4,11 +4,11 @@ import Topbar from './components/layout/Topbar';
 import DashboardPage from './pages/DashboardPage';
 import ReportsPage from './pages/ReportsPage';
 
-export const ThemeContext = React.createContext({ theme: 'dark', toggle: () => {} });
+export const ThemeContext = React.createContext({ theme: 'light', toggle: () => {} });
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
 
   const toggle = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 

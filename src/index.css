@@ -1608,6 +1608,12 @@ button.date-badge {
 }
 
 /* Occupancy calendar heatmap: rows = IST weeks (Sun-first), SUN…SAT footer, DD Mon row labels */
+.occupancy-heatmap-card__head {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 28px;
+}
+
 .occupancy-heatmap-scroll {
     max-height: min(520px, 65vh);
     overflow: auto;
@@ -1658,8 +1664,10 @@ button.date-badge {
 
 .occupancy-cal-cell {
     position: relative;
+    box-sizing: border-box;
     min-width: 44px;
     min-height: 50px;
+    padding: 8px 10px;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -1673,8 +1681,8 @@ button.date-badge {
 
 .occupancy-cal-day {
     position: absolute;
-    top: 4px;
-    left: 5px;
+    top: 7px;
+    left: 9px;
     font-size: 10px;
     font-weight: 700;
     font-family: 'DM Mono', monospace;

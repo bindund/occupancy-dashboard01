@@ -10,8 +10,8 @@ import { formatHeatmapCalendarSpanLabel } from '../../utils/istDates';
 
 /**
  * Calendar-style heatmap (reference layout): IST weeks as rows Sun→Sat,
- * left = week start DD Mon, cells = padded day corner + centred 0–10 score,
- * column labels SUN…SAT along the bottom, vertical 0–10 scale on the right.
+ * left = week start DD Mon, cells = padded day corner + centred score,
+ * column labels SUN…SAT along the bottom, vertical scale on the right.
  */
 export default function OccupancyHeatmap({ heatmapStartYmd, heatmapEndYmd }) {
   const { theme } = useContext(ThemeContext);
@@ -28,7 +28,7 @@ export default function OccupancyHeatmap({ heatmapStartYmd, heatmapEndYmd }) {
 
   return (
     <div className="card full-row occupancy-heatmap-card">
-      <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 14 }}>
+      <div className="occupancy-heatmap-card__head">
         <div>
           <div className="card-title">Occupancy Heatmap</div>
           <div className="card-subtitle">
@@ -63,7 +63,7 @@ export default function OccupancyHeatmap({ heatmapStartYmd, heatmapEndYmd }) {
                           title={`${cell.tooltipLine1} — ${cell.tooltipLine2}`}
                         >
                           <span className="occupancy-cal-day">{cell.dayPadded}</span>
-                          <span className="occupancy-cal-value">{cell.score0to10}</span>
+                          <span className="occupancy-cal-value">{cell.occupancyScore}</span>
                         </div>
                       )}
                     </td>
@@ -84,8 +84,8 @@ export default function OccupancyHeatmap({ heatmapStartYmd, heatmapEndYmd }) {
           </table>
         </div>
 
-        <aside className="occupancy-cal-scale" aria-label="Occupancy intensity 0 to 10">
-          <span className="occupancy-cal-scale-max">10</span>
+        <aside className="occupancy-cal-scale" aria-label="Occupancy intensity 0 to 15">
+          <span className="occupancy-cal-scale-max">15</span>
           <div
             className="occupancy-cal-scale-bar"
             style={{ background: scaleCss }}
