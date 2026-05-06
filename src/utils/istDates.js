@@ -54,11 +54,41 @@ export function ymdFromHtmlDateValue(s) {
   return { y, m: mo, d };
 }
 
-/** Inclusive 30-day range label in IST (start … start+29). */
-export function formatHeatmap30DayWindowLabel(startYmd) {
-  if (!startYmd) return '';
-  const endYmd = istAddCalendarDays(startYmd, 29);
+/** Move IST calendar date by whole months; clamps day (e.g. Mar 31 − 1 mo → Feb 28). */
+export function istAddCalendarMonths(ymd, deltaMonths) {
+  if (!ymd || !Number.isFinite(ymd.y) || !Number.isFinite(deltaMonths)) return null;
+  let y = ymd.y;
+  let m = ymd.m + deltaMonths;
+  while (m > 12) {
+    m -= 12;
+    y += 1;
+  }
+  while (m < 1) {
+    m += 12;
+    y -= 1;
+  }
+  const dim = daysInMonth(y, m);
+  const d = Math.min(ymd.d, dim);
+  return istYmd(istDateFromParts(y, m, d));
+}
+
+/** Heatmap window start: same calendar day in the previous month as `endYmd` (IST). */
+export function heatmapCalendarMonthSpanStart(endYmd) {
+  if (!endYmd || !Number.isFinite(endYmd.y)) return null;
+  return istAddCalendarMonths(endYmd, -1);
+}
+
+/** "6th Apr 2026 – 6th May 2026" style range for two IST calendar days. */
+export function formatHeatmapCalendarSpanLabel(startYmd, endYmd) {
+  if (!startYmd || !endYmd) return '';
   return `${formatTrendDayLabelIST(istDateFromParts(startYmd.y, startYmd.m, startYmd.d))} – ${formatTrendDayLabelIST(istDateFromParts(endYmd.y, endYmd.m, endYmd.d))}`;
+}
+
+/** Badge text when the picker stores the end date (usually today IST). */
+export function formatHeatmapMonthSpanFromEnd(endYmd) {
+  const startYmd = heatmapCalendarMonthSpanStart(endYmd);
+  if (!startYmd) return '';
+  return formatHeatmapCalendarSpanLabel(startYmd, endYmd);
 }
 
 function daysInMonth(y, month1to12) {

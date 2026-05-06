@@ -103,13 +103,15 @@ function computeDailyAvgForYmd(ymd, baseSeed, segmentIndex) {
 }
 
 /**
- * Calendar-style grid: rows = weeks (Sun–Sat), 30 consecutive IST days from startYmd.
- * Leading/trailing cells outside the 30-day window are empty.
+ * Calendar-style grid: rows = weeks (Sun–Sat), inclusive IST days from startYmd through endYmd.
+ * Leading/trailing cells outside that span are empty.
  */
-export function buildHeatmapCalendarGridModel(startYmd) {
+export function buildHeatmapCalendarGridModel(startYmd, endYmd) {
+  const dayCount =
+    istDayDistance(startYmd, endYmd) >= 0 ? istDayDistance(startYmd, endYmd) + 1 : 1;
   const gridSunday = gridSundayBeforeOrEqual(startYmd);
   const leading = istDayDistance(gridSunday, startYmd);
-  const totalSpan = leading + 30;
+  const totalSpan = leading + dayCount;
   const numRows = Math.ceil(totalSpan / 7);
 
   const baseSeed = ((startYmd.y * 366 + startYmd.m * 31 + startYmd.d) ^ 0x6d2b79f5) >>> 0;
@@ -128,7 +130,7 @@ export function buildHeatmapCalendarGridModel(startYmd) {
       const cellYmd = istAddCalendarDays(gridSunday, flat);
       const seg = flat - leading;
 
-      if (seg < 0 || seg >= 30) {
+      if (seg < 0 || seg >= dayCount) {
         row.push({
           key: `empty-${r}-${c}`,
           empty: true,

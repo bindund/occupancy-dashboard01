@@ -10,7 +10,8 @@ import OccupancyHeatmap from '../components/charts/OccupancyHeatmap';
 import FloorLevelView from '../components/floor/FloorLevelView';
 import {
     formatDateFilterRangeLabel,
-    formatHeatmap30DayWindowLabel,
+    formatHeatmapMonthSpanFromEnd,
+    heatmapCalendarMonthSpanStart,
     istYmd,
     ymdFromHtmlDateValue,
     ymdToHtmlDateValue,
@@ -22,12 +23,18 @@ const TIME_TABS = ['Today', 'Week', 'Month'];
 export default function DashboardPage() {
     const [activeFloor, setActiveFloor] = useState('All Floors');
     const [activeTime, setActiveTime] = useState('Week');
-    const [heatmapStartYmd, setHeatmapStartYmd] = useState(() => istYmd(new Date()));
+    /** End of heatmap window (IST); default today. Start = same calendar day previous month. */
+    const [heatmapEndYmd, setHeatmapEndYmd] = useState(() => istYmd(new Date()));
     const heatmapDateInputRef = useRef(null);
     const isAllFloors = activeFloor === 'All Floors';
     const dateFilterLabel = useMemo(
         () => formatDateFilterRangeLabel(activeTime),
         [activeTime],
+    );
+
+    const heatmapStartYmd = useMemo(
+        () => heatmapCalendarMonthSpanStart(heatmapEndYmd) ?? heatmapEndYmd,
+        [heatmapEndYmd],
     );
 
     const openHeatmapDatePicker = () => {
@@ -80,10 +87,10 @@ export default function DashboardPage() {
                         <input
                             ref={heatmapDateInputRef}
                             type="date"
-                            value={ymdToHtmlDateValue(heatmapStartYmd)}
+                            value={ymdToHtmlDateValue(heatmapEndYmd)}
                             onChange={(e) => {
                                 const next = ymdFromHtmlDateValue(e.target.value);
-                                if (next) setHeatmapStartYmd(next);
+                                if (next) setHeatmapEndYmd(next);
                             }}
                             aria-hidden
                             tabIndex={-1}
@@ -99,10 +106,10 @@ export default function DashboardPage() {
                             type="button"
                             className="date-badge"
                             onClick={openHeatmapDatePicker}
-                            title="Choose IST start date for the 30-day occupancy heatmap. Does not follow Today / Week / Month."
+                            title="Choose IST end date for the heatmap (defaults to today). Range is same calendar day last month through this date. Independent of Today / Week / Month."
                         >
                             <Calendar size={12} aria-hidden />
-                            <span>{formatHeatmap30DayWindowLabel(heatmapStartYmd)}</span>
+                            <span>{formatHeatmapMonthSpanFromEnd(heatmapEndYmd)}</span>
                         </button>
                     </div>
                 </div>
@@ -124,7 +131,10 @@ export default function DashboardPage() {
 
                     <EntriesExitsChart activeTime={activeTime} />
                     <HourwiseUtilization activeTime={activeTime} />
-                    <OccupancyHeatmap heatmapStartYmd={heatmapStartYmd} />
+                    <OccupancyHeatmap
+                        heatmapStartYmd={heatmapStartYmd}
+                        heatmapEndYmd={heatmapEndYmd}
+                    />
                 </>
             ) : (
                 <FloorLevelView floor={activeFloor} activeTime={activeTime} />

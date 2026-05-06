@@ -6,23 +6,23 @@ import {
   heatmapCellFillColor01,
   heatmapLegendGradient,
 } from '../../utils/heatmap30';
-import { formatHeatmap30DayWindowLabel } from '../../utils/istDates';
+import { formatHeatmapCalendarSpanLabel } from '../../utils/istDates';
 
 /**
  * Calendar-style heatmap (reference layout): IST weeks as rows Sun→Sat,
  * left = week start DD Mon, cells = padded day corner + centred 0–10 score,
  * column labels SUN…SAT along the bottom, vertical 0–10 scale on the right.
  */
-export default function OccupancyHeatmap({ heatmapStartYmd }) {
+export default function OccupancyHeatmap({ heatmapStartYmd, heatmapEndYmd }) {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
 
   const { rowLeftLabels, grid } = useMemo(
-    () => buildHeatmapCalendarGridModel(heatmapStartYmd),
-    [heatmapStartYmd.y, heatmapStartYmd.m, heatmapStartYmd.d],
+    () => buildHeatmapCalendarGridModel(heatmapStartYmd, heatmapEndYmd),
+    [heatmapStartYmd.y, heatmapStartYmd.m, heatmapStartYmd.d, heatmapEndYmd.y, heatmapEndYmd.m, heatmapEndYmd.d],
   );
 
-  const windowLine = formatHeatmap30DayWindowLabel(heatmapStartYmd);
+  const windowLine = formatHeatmapCalendarSpanLabel(heatmapStartYmd, heatmapEndYmd);
 
   const scaleCss = heatmapLegendGradient(isDark);
 
@@ -32,7 +32,7 @@ export default function OccupancyHeatmap({ heatmapStartYmd }) {
         <div>
           <div className="card-title">Occupancy Heatmap</div>
           <div className="card-subtitle">
-            Rolling 30 days (IST){windowLine ? ` · ${windowLine}` : ''} · unaffected by Today / Week / Month
+            Same calendar day last month through end date (IST){windowLine ? ` · ${windowLine}` : ''} · unaffected by Today / Week / Month
           </div>
         </div>
       </div>
