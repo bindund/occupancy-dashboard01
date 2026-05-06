@@ -71,6 +71,9 @@ export function getKpiForFloorAndScope(floorKey, scope) {
 export function adaptFloorCfgForScope(cfg, scope) {
   if (!cfg || scope === 'Today') return cfg;
   const m = kpiMultipliersForScope(scope);
+  const sparkline = Array.isArray(cfg.sparkline) ? cfg.sparkline : [];
+  const trend14 = Array.isArray(cfg.trend14) ? cfg.trend14 : [];
+  const peakRecords = Array.isArray(cfg.peakRecords) ? cfg.peakRecords : [];
   return {
     ...cfg,
     detail: {
@@ -82,17 +85,17 @@ export function adaptFloorCfgForScope(cfg, scope) {
       ...cfg.overview,
       todayPeak: Math.round(cfg.overview.todayPeak * m.peak),
     },
-    sparkline: cfg.sparkline.map(pt => ({
+    sparkline: sparkline.map(pt => ({
       ...pt,
       entries: Math.round(pt.entries * m.spark),
       exits: Math.round(pt.exits * m.spark),
     })),
-    trend14: cfg.trend14.map(pt => ({
+    trend14: trend14.map(pt => ({
       ...pt,
       entries: Math.round(pt.entries * m.trend),
       exits: Math.round(pt.exits * m.trend),
     })),
-    peakRecords: cfg.peakRecords.map((row, i) => ({
+    peakRecords: peakRecords.map((row, i) => ({
       ...row,
       occupancy: Math.max(40, Math.round(row.occupancy * (0.94 + (i % 5) * 0.008))),
     })),
@@ -206,7 +209,9 @@ export const FLOOR_LEVEL_VIEW = {
                 { metric: 'Exits', current: '690', previous: '658', change: '+4.8%' },
             ],
         },
-    }
+        trend14: trend14(3.8, 0.22),
+        peakRecords: peakRows(168, 5, 24),
+    },
 };
 
 export const FORECAST_DATA = {

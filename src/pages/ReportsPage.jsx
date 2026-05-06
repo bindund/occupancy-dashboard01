@@ -1,11 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Download, Calendar, BarChart2 } from 'lucide-react';
 import { RECENT_REPORTS } from '../data/mockData';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/** True when this calendar month is after "today" for the chosen reporting year (not yet completable). */
+function isFutureReportingMonth(yearStr, monthName) {
+  const today = new Date();
+  const y = parseInt(yearStr, 10);
+  if (Number.isNaN(y)) return false;
+  const cy = today.getFullYear();
+  const cm = today.getMonth();
+  const idx = MONTH_NAMES.indexOf(monthName);
+  if (idx < 0) return false;
+  if (y > cy) return true;
+  if (y < cy) return false;
+  return idx > cm;
+}
 
 export default function ReportsPage() {
   const [subTab, setSubTab] = useState('Monthly Reports');
   const [year, setYear] = useState('2026');
   const [month, setMonth] = useState('');
+  const canGenerate = Boolean(month) && !isFutureReportingMonth(year, month);
+
+  useEffect(() => {
+    setMonth(m => (m && isFutureReportingMonth(year, m) ? '' : m));
+  }, [year]);
 
   return (
     <div className="content">
@@ -36,35 +60,55 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <div className="form-row">
+        <div className="form-row report-form-row">
           <div className="form-group">
-            <label>REPORTING YEAR</label>
-            <select className="form-select" value={year} onChange={e => setYear(e.target.value)}>
+            <label htmlFor="report-year">Reporting year</label>
+            <select id="report-year" className="form-select" value={year} onChange={e => setYear(e.target.value)}>
               <option value="2026">2026</option>
               <option value="2025">2025</option>
             </select>
           </div>
           <div className="form-group">
-            <label>REPORTING MONTH</label>
-            <select className="form-select" value={month} onChange={e => setMonth(e.target.value)}>
-              <option value="">Select Month</option>
-              {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
+            <label htmlFor="report-month">Reporting month</label>
+            <select id="report-month" className="form-select" value={month} onChange={e => setMonth(e.target.value)}>
+              <option value="">Select month…</option>
+              {MONTH_NAMES.map(m => {
+                const disabled = isFutureReportingMonth(year, m);
+                return (
+                  <option key={m} value={m} disabled={disabled} title={disabled ? 'Future month — not available yet' : undefined}>
+                    {m}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div className="form-group">
-            <label>REPORT STATUS</label>
-            <select className="form-select">
-              <option>Current Period – Not Available</option>
-              <option>Available</option>
-            </select>
+            {/* <span className="form-group-label" id="report-status-label">Report status</span> */}
+            {/* <div
+              className={`report-status-box${canGenerate ? ' report-status-box--ready' : ''}`}
+              role="status"
+              aria-labelledby="report-status-label"
+            >
+              {canGenerate ? (
+                <>Ready — <strong>{month} {year}</strong></>
+              ) : (
+                <>
+                  Choose a month to enable PDF generation (demo).
+                  <span className="report-status-hint"> Months after today are disabled for the current year.</span>
+                </>
+              )}
+            </div> */}
           </div>
         </div>
 
-        <button className="btn-generate">
-          <Download size={14} />
-          Generate Report – Not Available
+        <button
+          type="button"
+          className={`btn-generate${canGenerate ? ' btn-generate--ready' : ''}`}
+          disabled={!canGenerate}
+          onClick={() => canGenerate && window.alert(`Demo: would generate ${month} ${year} occupancy report.`)}
+        >
+          <Download size={14} aria-hidden />
+          {canGenerate ? `Generate report (${month} ${year})` : 'Generate report'}
         </button>
       </div>
 

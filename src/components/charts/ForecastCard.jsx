@@ -1,35 +1,68 @@
 import React, { useContext, useMemo } from 'react';
+import Highcharts from 'highcharts';
+import HighchartsReact from 'highcharts-react-official';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
 import { FORECAST_DATA } from '../../data/mockData';
 import { ThemeContext } from '../../App';
+import { baseChartOptions } from '../../utils/chartTheme';
 import { formatTrendDayLabelIST, formatDateFilterRangeLabel } from '../../utils/istDates';
 
-function Gauge({ value, max = 1500, isDark }) {
-  const pct = Math.min(value / max, 1);
-  const angle = pct * 180 - 90;
-  const rad = (angle * Math.PI) / 180;
-  const cx = 60, cy = 60, r = 50;
+const GAUGE_MAX = 1500;
+const GAUGE_GREEN = '#10B981';
 
-  const describeArc = (startDeg, endDeg) => {
-    const s = ((startDeg - 90) * Math.PI) / 180;
-    const e = ((endDeg - 90) * Math.PI) / 180;
-    const sx = cx + r * Math.cos(s), sy = cy + r * Math.sin(s);
-    const ex = cx + r * Math.cos(e), ey = cy + r * Math.sin(e);
-    const large = endDeg - startDeg > 180 ? 1 : 0;
-    return `M ${sx} ${sy} A ${r} ${r} 0 ${large} 1 ${ex} ${ey}`;
-  };
+/** Semi-circle donut (Highcharts-style): track + filled slice for peak vs cap. */
+function ForecastSemiGauge({ value, theme }) {
+  const isDark = theme === 'dark';
+  const cap = GAUGE_MAX;
+  const v = Math.min(Math.max(value, 0), cap);
+  const rest = Math.max(cap - v, 0);
+  const track = isDark ? '#2a2f42' : '#e8eaf4';
 
-  const trackColor = isDark ? '#2a2f42' : '#e2e5f0';
-  const labelColor = isDark ? '#545d82' : '#9399b8';
+  const options = useMemo(
+    () =>
+      baseChartOptions(theme, {
+        chart: {
+          type: 'pie',
+          height: 118,
+          backgroundColor: 'transparent',
+          margin: [0, 0, 0, 0],
+          spacing: [0, 0, 0, 0],
+        },
+        accessibility: { enabled: false },
+        title: { text: undefined },
+        credits: { enabled: false },
+        tooltip: { enabled: false },
+        legend: { enabled: false },
+        plotOptions: {
+          pie: {
+            startAngle: -90,
+            endAngle: 90,
+            innerSize: '72%',
+            size: '118%',
+            center: ['50%', '100%'],
+            borderWidth: 0,
+            dataLabels: { enabled: false },
+            states: { hover: { enabled: false }, inactive: { enabled: false } },
+          },
+        },
+        series: [
+          {
+            type: 'pie',
+            enableMouseTracking: false,
+            data: [
+              { name: 'Peak', y: v, color: GAUGE_GREEN },
+              { name: 'Track', y: rest, color: track },
+            ],
+          },
+        ],
+      }),
+    [theme, v, rest, track]
+  );
 
   return (
-    <svg viewBox="0 0 120 70" width="120" height="70">
-      <path d={describeArc(0, 180)} fill="none" stroke={trackColor} strokeWidth="8" strokeLinecap="round" />
-      <path d={describeArc(0, pct * 180)} fill="none" stroke="#10B981" strokeWidth="8" strokeLinecap="round" />
-      <circle cx={cx + r * Math.cos(rad)} cy={cy + r * Math.sin(rad)} r="5" fill="#10B981" />
-      {/* <text x={cx - r - 2} y={cy + 14} fontSize="9" fill={labelColor}>0</text>
-      <text x={cx + r - 12} y={cy + 14} fontSize="9" fill={labelColor}>{max}</text> */}
-    </svg>
+    <div className="forecast-semi-gauge-host" aria-hidden>
+      <HighchartsReact highcharts={Highcharts} options={options} containerProps={{ className: 'forecast-semi-gauge-hc' }} />
+    </div>
   );
 }
 
@@ -85,7 +118,7 @@ export default function ForecastCard({ activeTime = 'Today' }) {
       <div className="forecast-inner">
         <div className="forecast-top">
           <div className="forecast-gauge-col">
-            <Gauge value={d.peakForecast} isDark={isDark} />
+            <ForecastSemiGauge value={d.peakForecast} theme={theme} />
             <div className="forecast-gauge-copy">
               <div className="forecast-gauge-label">
                 PEAK FORECAST
