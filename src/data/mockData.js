@@ -225,12 +225,12 @@ export const FORECAST_DATA = {
     secondaryPeak: '2–3 PM',
     secondaryPeakPpl: 820,
     /** Hours shown in darker teal (peak window); max hour gets strongest fill in UI */
-    highlightHours: ['10A', '11A'],
+    highlightHours: ['10 AM', '11 AM'],
     hourly: [
-        { hour: '7A', val: 120 }, { hour: '8A', val: 280 }, { hour: '9A', val: 620 },
-        { hour: '10A', val: 900 }, { hour: '11A', val: 1150 }, { hour: '12P', val: 820 },
-        { hour: '1P', val: 680 }, { hour: '2P', val: 750 }, { hour: '3P', val: 640 },
-        { hour: '4P', val: 480 }, { hour: '5P', val: 310 }, { hour: '6P', val: 190 },
+        { hour: '7 AM', val: 120 }, { hour: '8 AM', val: 280 }, { hour: '9 AM', val: 620 },
+        { hour: '10 AM', val: 900 }, { hour: '11 AM', val: 1150 }, { hour: '12 PM', val: 820 },
+        { hour: '1 PM', val: 680 }, { hour: '2 PM', val: 750 }, { hour: '3 PM', val: 640 },
+        { hour: '4 PM', val: 480 }, { hour: '5 PM', val: 310 }, { hour: '6 PM', val: 190 },
     ],
 };
 

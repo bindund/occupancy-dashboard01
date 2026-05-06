@@ -160,11 +160,11 @@ export default function ForecastCard({ activeTime = 'Today' }) {
               <BarChart
                 data={d.hourly}
                 barCategoryGap="12%"
-                margin={{ top: 6, right: 4, left: 4, bottom: 2 }}
+                margin={{ top: 6, right: 4, left: 4, bottom: 10 }}
               >
                 <XAxis
                   dataKey="hour"
-                  tick={{ fontSize: 9, fill: 'var(--text3)' }}
+                  tick={{ fontSize: 8, fill: 'var(--text3)' }}
                   axisLine={false}
                   tickLine={false}
                   interval={0}
