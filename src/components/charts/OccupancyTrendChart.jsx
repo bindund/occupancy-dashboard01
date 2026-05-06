@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { LEVEL_COLORS } from '../../data/mockData';
+import { formatTrendDayLabelIST, formatDateFilterRangeLabel } from '../../utils/istDates';
+import { mulberry32 } from '../../utils/seededRandom';
+import { datasetSeed } from '../../utils/dashboardScope';
 
 const LEVEL_KEYS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'];
-
-const TREND_DAY_LABEL = '16 Feb 2026';
 
 function formatHour12(h) {
   if (h === 0) return '12 AM';
@@ -16,28 +17,100 @@ function formatHour12(h) {
   return `${h - 12} PM`;
 }
 
-/** Single calendar day: 24 hourly points from 12 AM through 11 PM. */
-const TREND_DATA = (() => {
-  const result = [];
-  for (let h = 0; h < 24; h++) {
-    const isDay = h >= 8 && h <= 18;
-    const base = isDay ? Math.random() * 600 + 200 : Math.random() * 40;
-    result.push({
-      hour: h,
-      L1: Math.round(base * 0.55),
-      L2: Math.round(base * 0.28),
-      L3: Math.round(base * 0.05),
-      L4: Math.round(base * 0.22),
-      L5: Math.round(base * 0.14),
-      L6: Math.round(base * 0.09),
-    });
-  }
-  return result;
-})();
+function yTicksForMax(yCap) {
+  const base = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
+  const ticks = base.filter(t => t <= yCap);
+  if (yCap > 0 && ticks[ticks.length - 1] !== yCap) ticks.push(yCap);
+  return ticks.length ? ticks : [0, yCap];
+}
 
-/** Fixed scale so Y ticks read 0 → 2000 in steps of 500. */
-const Y_DOMAIN_MAX = 2000;
-const Y_TICKS = [0, 500, 1000, 1500, 2000];
+function levelValues(rand, base) {
+  return {
+    L1: Math.round(base * 0.55),
+    L2: Math.round(base * 0.28),
+    L3: Math.round(base * 0.05),
+    L4: Math.round(base * 0.22),
+    L5: Math.round(base * 0.14),
+    L6: Math.round(base * 0.09),
+  };
+}
+
+/** @returns {{ data: object[], chart: object, subtitle: string, yTicks: number[] }} */
+function trendModel(activeTime, seed) {
+  const rand = mulberry32(seed >>> 0);
+  const subtitleToday = `All floors · ${formatTrendDayLabelIST()} · 12 AM – 11 PM`;
+  const subWeek = `All floors · ${formatDateFilterRangeLabel('Week')} · daily peak`;
+  const subMonth = `All floors · ${formatDateFilterRangeLabel('Month')} · weekly rollup`;
+
+  if (activeTime === 'Today') {
+    const dayNoise = rand() * 80;
+    const data = Array.from({ length: 24 }, (_, hour) => {
+      const isDay = hour >= 8 && hour <= 18;
+      const base = (isDay ? rand() * 600 + 200 : rand() * 40) + dayNoise * 0.08;
+      return { x: hour, ...levelValues(rand, base) };
+    });
+    const maxLv = Math.max(...data.flatMap(d => LEVEL_KEYS.map(k => d[k])), 1);
+    const yCap = Math.max(500, Math.ceil(maxLv / 500) * 500);
+    return {
+      data,
+      chart: {
+        xDataKey: 'x',
+        type: 'number',
+        domain: [0, 23],
+        ticks: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 23],
+        tickFormatter: formatHour12,
+      },
+      subtitle: subtitleToday,
+      yTicks: yTicksForMax(yCap),
+      yMax: yCap,
+    };
+  }
+
+  if (activeTime === 'Week') {
+    const dow = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const data = dow.map((label, i) => {
+      const work = i < 5;
+      const base = (work ? rand() * 820 + 220 : rand() * 260 + 50) + rand() * 60;
+      return { x: label, ...levelValues(rand, base) };
+    });
+    const maxLv = Math.max(...data.flatMap(d => LEVEL_KEYS.map(k => d[k])), 1);
+    const yCap = Math.max(500, Math.ceil(maxLv / 500) * 500);
+    return {
+      data,
+      chart: {
+        xDataKey: 'x',
+        type: 'category',
+        tickFormatter: v => v,
+      },
+      subtitle: subWeek,
+      yTicks: yTicksForMax(yCap),
+      yMax: yCap,
+    };
+  }
+
+  const data = [1, 2, 3, 4].map(w => {
+    const base = rand() * 880 + 240 + w * 12;
+    return { x: `W${w}`, ...levelValues(rand, base) };
+  });
+  const maxLv = Math.max(...data.flatMap(d => LEVEL_KEYS.map(k => d[k])), 1);
+  const yCap = Math.max(500, Math.ceil(maxLv / 500) * 500);
+  return {
+    data,
+    chart: {
+      xDataKey: 'x',
+      type: 'category',
+      tickFormatter: v => v,
+    },
+    subtitle: subMonth,
+    yTicks: yTicksForMax(yCap),
+    yMax: yCap,
+  };
+}
+
+function seriesLabel(dataKey) {
+  if (typeof dataKey === 'string' && /^L\d+$/.test(dataKey)) return `Floor ${dataKey.slice(1)}`;
+  return dataKey;
+}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -50,26 +123,31 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div style={{ color: 'var(--text3)', marginBottom: 4, fontSize: 10 }}>{timeLabel}</div>
       {payload.map(p => (
         <div key={p.dataKey} style={{ color: p.color, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-          <span>{p.dataKey}</span><span>{p.value}</span>
+          <span>{seriesLabel(p.dataKey)}</span><span>{p.value}</span>
         </div>
       ))}
     </div>
   );
 };
 
-export default function OccupancyTrendChart() {
+export default function OccupancyTrendChart({ activeTime = 'Today' }) {
+  const model = useMemo(
+    () => trendModel(activeTime, datasetSeed(activeTime)),
+    [activeTime],
+  );
+
   return (
     <div className="card occupancy-trend-card">
       <div className="occupancy-trend-head">
         <div>
           <div className="card-title">Occupancy Trend</div>
-          <div className="card-subtitle occupancy-trend-sub">All floors · {TREND_DAY_LABEL} · 12 AM – 11 PM</div>
+          <div className="card-subtitle occupancy-trend-sub">{model.subtitle}</div>
         </div>
         <div className="trend-legend">
           {LEVEL_KEYS.map(l => (
             <div key={l} className="legend-item">
               <div className="legend-dot" style={{ background: LEVEL_COLORS[l] }} />
-              {l.replace('L', 'Level ')}
+              {`Floor ${l.slice(1)}`}
             </div>
           ))}
         </div>
@@ -77,21 +155,26 @@ export default function OccupancyTrendChart() {
 
       <div className="occupancy-trend-chart-shell">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={TREND_DATA} margin={{ top: 4, right: 6, left: 4, bottom: 2 }}>
+          <LineChart
+            key={activeTime}
+            data={model.data}
+            margin={{ top: 4, right: 6, left: 4, bottom: 2 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis
-              dataKey="hour"
-              type="number"
-              domain={[0, 23]}
-              ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 23]}
-              tickFormatter={formatHour12}
+              dataKey={model.chart.xDataKey}
+              type={model.chart.type}
+              {...(model.chart.domain != null
+                ? { domain: model.chart.domain, ticks: model.chart.ticks }
+                : {})}
+              tickFormatter={model.chart.tickFormatter}
               tick={{ fontSize: 9, fill: 'var(--text3)' }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              domain={[0, Y_DOMAIN_MAX]}
-              ticks={Y_TICKS}
+              domain={[0, model.yMax]}
+              ticks={model.yTicks}
               tick={{ fontSize: 9, fill: 'var(--text3)' }}
               axisLine={false}
               tickLine={false}

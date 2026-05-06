@@ -11,7 +11,7 @@ import {
   LogIn,
   LogOut,
 } from 'lucide-react';
-import { FLOOR_LEVEL_VIEW } from '../../data/mockData';
+import { FLOOR_LEVEL_VIEW, adaptFloorCfgForScope } from '../../data/mockData';
 import { ThemeContext } from '../../App';
 import { hexAlpha } from '../../utils/color';
 import { baseChartOptions, getDashboardChartTheme, EXITS_SERIES_COLOR } from '../../utils/chartTheme';
@@ -375,8 +375,11 @@ function PeakOccupancyTable({ rows, accent, floorName }) {
   );
 }
 
-export default function FloorLevelView({ floor }) {
-  const cfg = FLOOR_LEVEL_VIEW[floor];
+export default function FloorLevelView({ floor, activeTime = 'Today' }) {
+  const cfg = useMemo(() => {
+    const raw = FLOOR_LEVEL_VIEW[floor];
+    return raw ? adaptFloorCfgForScope(raw, activeTime) : null;
+  }, [floor, activeTime]);
   if (!cfg) return null;
 
   const { accent, detail, overview, sparkline, trend14, peakRecords } = cfg;
@@ -484,7 +487,7 @@ export default function FloorLevelView({ floor }) {
         </div>
 
         <div className="card floor-overview-card">
-          <div className="card-title" style={{ marginBottom: 10 }}>Level overview</div>
+          <div className="card-title" style={{ marginBottom: 10 }}>Floor overview</div>
           <div className="floor-overview-row">
             <span className="floor-overview-label">Status</span>
             <span

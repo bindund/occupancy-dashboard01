@@ -1,84 +1,97 @@
-import React, { useContext } from 'react';
-import { HEATMAP_DATA } from '../../data/mockData';
+import React, { useContext, useMemo } from 'react';
 import { ThemeContext } from '../../App';
+import {
+  buildHeatmapCalendarGridModel,
+  HEATMAP_CAL_COL_LABELS,
+  heatmapCellFillColor01,
+  heatmapLegendGradient,
+} from '../../utils/heatmap30';
+import { formatHeatmap30DayWindowLabel } from '../../utils/istDates';
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-function getColor(val, isDark) {
-  if (val === 0) return isDark ? '#21253a' : '#f0f2f8';
-  const intensity = Math.min(Math.round(val * 5), 5);
-  const dark = ['#1e3a5f', '#1e4d8c', '#1a5bb5', '#1565c0', '#1976d2', '#1e88e5'];
-  const light = ['#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb'];
-  return isDark ? dark[intensity] : light[intensity];
-}
-
-export default function OccupancyHeatmap() {
+/**
+ * Calendar-style heatmap (reference layout): IST weeks as rows Sun→Sat,
+ * left = week start DD Mon, cells = padded day corner + centred 0–10 score,
+ * column labels SUN…SAT along the bottom, vertical 0–10 scale on the right.
+ */
+export default function OccupancyHeatmap({ heatmapStartYmd }) {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
-  const swatches = [0, 0.1, 0.25, 0.5, 0.7, 0.9, 1.0];
+
+  const { rowLeftLabels, grid } = useMemo(
+    () => buildHeatmapCalendarGridModel(heatmapStartYmd),
+    [heatmapStartYmd.y, heatmapStartYmd.m, heatmapStartYmd.d],
+  );
+
+  const windowLine = formatHeatmap30DayWindowLabel(heatmapStartYmd);
+
+  const scaleCss = heatmapLegendGradient(isDark);
 
   return (
-    <div className="card full-row">
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+    <div className="card full-row occupancy-heatmap-card">
+      <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
           <div className="card-title">Occupancy Heatmap</div>
-          <div className="card-subtitle">Average people present by hour and day of week</div>
+          <div className="card-subtitle">
+            Rolling 30 days (IST){windowLine ? ` · ${windowLine}` : ''} · unaffected by Today / Week / Month
+          </div>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text3)' }}>Colour intensity = relative occupancy</div>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '3px' }}>
-          <thead>
-            <tr>
-              <th style={{ width: 48, fontSize: 11, color: 'var(--text3)', fontWeight: 500, textAlign: 'left', paddingBottom: 6 }} />
-              {DAYS.map(d => (
-                <th key={d} style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 500, textAlign: 'center', paddingBottom: 6 }}>
-                  {d}
-                </th>
+      <div className="occupancy-cal-wrap">
+        <div className="occupancy-heatmap-scroll occupancy-cal-scroll">
+          <table className="occupancy-heatmap-table occupancy-cal-table">
+            <tbody>
+              {grid.map((row, ri) => (
+                <tr key={rowLeftLabels[ri] ?? ri}>
+                  <th scope="row" className="occupancy-cal-row-label">
+                    {rowLeftLabels[ri]}
+                  </th>
+                  {row.map(cell => (
+                    <td key={cell.key} className="occupancy-cal-td">
+                      {cell.empty ? (
+                        <div
+                          className="occupancy-cal-cell occupancy-cal-cell--empty"
+                          style={{ background: heatmapCellFillColor01(0, true, isDark) }}
+                          aria-hidden
+                        />
+                      ) : (
+                        <div
+                          className="occupancy-cal-cell"
+                          style={{
+                            background: heatmapCellFillColor01(cell.rawAvg, false, isDark),
+                          }}
+                          title={`${cell.tooltipLine1} — ${cell.tooltipLine2}`}
+                        >
+                          <span className="occupancy-cal-day">{cell.dayPadded}</span>
+                          <span className="occupancy-cal-value">{cell.score0to10}</span>
+                        </div>
+                      )}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {HEATMAP_DATA.map(row => (
-              <tr key={row.hour}>
-                <td style={{ fontSize: 11, color: 'var(--text3)', paddingRight: 8, whiteSpace: 'nowrap' }}>
-                  {row.hour}
-                </td>
-                {DAYS.map(day => (
-                  <td key={day} style={{ padding: '2px' }}>
-                    <div
-                      title={`${day} ${row.hour}: ${Math.round(row[day] * 100)}%`}
-                      style={{
-                        height: 22,
-                        borderRadius: 4,
-                        background: getColor(row[day], isDark),
-                        cursor: 'default',
-                        transition: 'opacity 0.1s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                    />
-                  </td>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th className="occupancy-cal-corner" scope="colgroup" aria-hidden />
+                {HEATMAP_CAL_COL_LABELS.map(lab => (
+                  <th key={lab} scope="col" className="occupancy-cal-axis">
+                    {lab}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="heatmap-legend">
-        <span>Low</span>
-        <div className="heatmap-legend-bar">
-          {swatches.map((v, i) => (
-            <div
-              key={i}
-              className="heatmap-legend-swatch"
-              style={{ background: getColor(v, isDark) }}
-            />
-          ))}
+            </tfoot>
+          </table>
         </div>
-        <span>High</span>
+
+        <aside className="occupancy-cal-scale" aria-label="Occupancy intensity 0 to 10">
+          <span className="occupancy-cal-scale-max">10</span>
+          <div
+            className="occupancy-cal-scale-bar"
+            style={{ background: scaleCss }}
+          />
+          <span className="occupancy-cal-scale-min">0</span>
+        </aside>
       </div>
     </div>
   );

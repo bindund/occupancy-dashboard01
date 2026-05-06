@@ -1,28 +1,33 @@
 import React, { useMemo } from 'react';
-import { FLOOR_ACTIVITY_OVERVIEW, LEVEL_COLORS } from '../../data/mockData';
+import {
+  FLOOR_ACTIVITY_OVERVIEW,
+  LEVEL_COLORS,
+  kpiMultipliersForScope,
+} from '../../data/mockData';
 
-function levelLabel(levelKey) {
-  return `Level ${levelKey.replace('L', '')}`;
+function floorLabel(levelKey) {
+  return `Floor ${levelKey.replace(/^L/, '')}`;
 }
 
-export default function FloorActivity() {
-  const { total, avgPerFloor, maxOcc, rows, avgLinePct } = useMemo(() => {
-    const list = FLOOR_ACTIVITY_OVERVIEW.map(row => ({
+export default function FloorActivity({ activeTime = 'Today' }) {
+  const { total, avgPerFloor, maxOcc, rows } = useMemo(() => {
+    const { occupancy: occM } = kpiMultipliersForScope(activeTime);
+    const list = FLOOR_ACTIVITY_OVERVIEW.map((row, idx) => ({
       ...row,
+      occupancy: Math.max(12, Math.round(row.occupancy * occM * (1 + idx * 0.015))),
       color: LEVEL_COLORS[row.levelKey],
-      label: levelLabel(row.levelKey),
+      label: floorLabel(row.levelKey),
     }));
     const total = list.reduce((s, r) => s + r.occupancy, 0);
     const maxOcc = Math.max(...list.map(r => r.occupancy), 1);
     const avgPerFloor = Math.round(total / list.length);
-    const avgLinePct = (avgPerFloor / maxOcc) * 100;
     const rows = list.map(r => ({
       ...r,
       barPct: (r.occupancy / maxOcc) * 100,
       sharePct: total > 0 ? (100 * r.occupancy) / total : 0,
     }));
-    return { total, avgPerFloor, maxOcc, rows, avgLinePct };
-  }, []);
+    return { total, avgPerFloor, maxOcc, rows };
+  }, [activeTime]);
 
   return (
     <div className="card floor-activity-card">
@@ -57,10 +62,6 @@ export default function FloorActivity() {
                   className="floor-activity-fill"
                   style={{ width: `${r.barPct}%`, backgroundColor: r.color }}
                 />
-                <div
-                  className="floor-activity-avg-line"
-                  style={{ left: `${avgLinePct}%` }}
-                />
               </div>
             </div>
             <div className="floor-activity-row-right">
@@ -73,10 +74,6 @@ export default function FloorActivity() {
 
       <div className="floor-activity-foot">
         <div className="floor-activity-legend">
-          <span className="floor-activity-legend-item">
-            <span className="floor-activity-leg-avg-icon" aria-hidden />
-            Average line
-          </span>
           <span className="floor-activity-legend-item">
             <span className="floor-activity-leg-bar-icon" aria-hidden />
             Bar relative to highest floor
